@@ -29,10 +29,12 @@ def operation():
     prev_edge = 0
     flag = 0
     old_frame = None
+    i = 0
     while response:
         dims = image.shape
         size = (dims[1], dims[0])
-
+        print(i)
+        i+=1
         # Edge detection process
         grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blur_grayscale = cv2.GaussianBlur(grayscale, (3, 3), cv2.BORDER_DEFAULT)
@@ -42,9 +44,11 @@ def operation():
         # threshold and find the contours.
         # Contours can be explained simply as a curve joining
         # all the continuous points (along the boundary), having same color or intensity.
-        #edge = cannyedge.canny_edge_detection(image).astype(np.uint8)
-        edge1 = cv2.Canny(image, 60, 180)
+        edge = cannyedge.canny_edge_detection(image).astype(np.uint8)
+        #edge1 = cv2.Canny(image, 60, 180)
 
+
+        '''
         if old_frame is not None:
             diff_frame = cv2.absdiff(edge1, old_frame)
             if prev_edge == 0:
@@ -58,7 +62,7 @@ def operation():
 
 
         old_frame = None
-
+        '''
 
         #ret, edge2 = cv2.threshold(edge, 165, 255, cv2.THRESH_BINARY)
 
@@ -66,16 +70,24 @@ def operation():
         #contours, hierarchy = cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
         #cv2.imshow('thresh', thresh)
         #cv2.waitKey(0)
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+        if flag == 0:
+            #im = image.copy()
+            #print(contours)
+            #cv2.imshow('im', im)
+            #cv2.drawContours(im, contours, -1, (0,255,0), 1)
+
+            #cv2.imshow('edge', im)
+            #cv2.waitKey(0)
+            flag = 1
+            #sys.exit()
 
         corners = corners_identification(hierarchy, contours)
 
         if len(corners) == 0:
             corners = old_positions
-        if flag == 0:
-            print(corners)
-            flag = 1
+        #print(corners)
 
         # Get the homography of the tag
         tag_img_resized = calculate_homography_wrap(corners, image)
