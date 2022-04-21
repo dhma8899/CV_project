@@ -42,7 +42,7 @@ def design_shape(shape1, shape2, pm):
         op.append(np.divide(data[i], data[i][2]))
         op2.append(np.divide(data2[i], data2[i][2]))
 
-    print(op)
+    #print(op)
     shape_data = []
     shape_data2 = []
     for i in range(8):

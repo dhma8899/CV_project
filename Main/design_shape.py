@@ -21,7 +21,6 @@ def design_shape(shape, pm):
     op = []
     for i in range(8):
         op.append(data[i] / data[i][2])
-    print(op)
     stack = np.vstack(op)
 
     shape_data = []

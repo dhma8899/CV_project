@@ -24,12 +24,18 @@ def hysteresis(suppression):
                 backup[row, col] = 1
     count = np.sum(backup == 2)
     while True:
-        for row in range(dims[0] - 1):
-            for col in range(dims[1] - 1):
+        for row in range(dims[0]):
+            for col in range(dims[1]):
                 if backup[row, col] == 1:
-                    check = max(backup[row - 1, col - 1], backup[row - 1, col], backup[row - 1, col + 1],
-                                backup[row, col - 1], backup[row, col + 1], backup[row + 1, col - 1],
-                                backup[row + 1, col], backup[row + 1, col + 1])
+                    #check = max(backup[row - 1, col - 1], backup[row - 1, col], backup[row - 1, col + 1],
+                     #           backup[row, col - 1], backup[row, col + 1], backup[row + 1, col - 1],
+                     #           backup[row + 1, col], backup[row + 1, col + 1])
+                    minrow = max(row-2, 0)
+                    maxrow = min(row+2, dims[0])
+                    mincol = max(col-2, 0)
+                    maxcol = min(col+2, dims[1])
+                    check = np.max(backup[minrow:maxrow, mincol:maxcol])
+
                     if check == 2:
                         backup[row, col] = 2
         if count == np.sum(backup == 2):
@@ -96,7 +102,7 @@ def canny_edge_detection(input_image):
     #grayscale = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
     grayscale = np.dot(input_image, [0.2989, 0.5870, 0.1140])
     # create Gaussian blur from grayscale image
-    gaussian = cv2.GaussianBlur(grayscale, (5, 5), cv2.BORDER_DEFAULT)
+    gaussian = cv2.GaussianBlur(grayscale, (0, 0), cv2.BORDER_DEFAULT)
     #gaussian = ndimage.gaussian_filter(grayscale, sigma=1.0)
     # Find the gradients in x and y
     fx, fy, magnitude = make_gradient(gaussian)
