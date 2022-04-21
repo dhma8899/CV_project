@@ -21,12 +21,10 @@ def design_shape(shape, pm):
     op = []
     for i in range(8):
         op.append(data[i] / data[i][2])
-    print(op)
-    stack = np.vstack(op)
 
     shape_data = []
     for i in range(8):
-        shape_data.append([stack[i][0], stack[i][1]])
+        shape_data.append([op[i][0], op[i][1]])
 
     shape_coords = np.array(shape_data)
     return shape_coords

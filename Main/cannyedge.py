@@ -27,9 +27,6 @@ def hysteresis(suppression):
         for row in range(dims[0]):
             for col in range(dims[1]):
                 if backup[row, col] == 1:
-                    #check = max(backup[row - 1, col - 1], backup[row - 1, col], backup[row - 1, col + 1],
-                                #backup[row, col - 1], backup[row, col + 1], backup[row + 1, col - 1],
-                                #backup[row + 1, col], backup[row + 1, col + 1])
                     minrow = max(row-2, 0)
                     maxrow = min(row+2, dims[0])
                     mincol = max(col-2, 0)

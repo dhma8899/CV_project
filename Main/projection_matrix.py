@@ -7,12 +7,8 @@ def projection_matrix(homography):
     x = np.array([[1406.08415449821, 0, 0],
                   [2.20679787308599, 1417.99930662800, 0],
                   [1014.13643417416, 566.347754321696, 1]]).T
-    temp = np.dot(lg.inv(x), homography)
-    temp2 = lg.inv(x) @ homography
-    #print(temp)
-    #print("")
-    #print(temp2)
-    col_data = [temp2[:, 0], temp2[:, 1], temp2[:, 2]]
+    temp = lg.inv(x) @ homography
+    col_data = [temp[:, 0], temp[:, 1], temp[:, 2]]
     eq = 1 / math.sqrt(lg.norm(col_data[0], 2) * lg.norm(col_data[1], 2))
     op = [col_data[0] * eq, col_data[1] * eq, col_data[2] * eq]
     cross = np.cross(op[0]+op[1], np.cross(op[0], op[1]))

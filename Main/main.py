@@ -2,12 +2,11 @@ import cv2
 import numpy as np
 import Homography as H_matrix
 import cannyedge
-import positions as ps
+import positions2 as ps
 import projectdata as pd
 import projection_matrix as pm
 import design_shape as ds
 import output
-import experiments as exp
 import sys
 import matplotlib.pyplot as plt
 import imageio
@@ -20,21 +19,22 @@ except:
 
 def operation():
     video_frames = []
-    shape = input("Enter structure Cube, Cuboid, Pyramid")
-    shape2 = "pyramid"
-    row = col = 512
+    shape = input("Enter structure Cube, Cuboid, Pyramid, image")
+    method = input("Enter Binary, Canny")
+
     frame = cv2.VideoCapture('input/Tag1.mp4')
     response, image = frame.read()
     old_positions = 0
-    prev_edge = 0
-    flag = 0
-    old_frame = None
-    i = 0
+    pdimage = cv2.imread('lena.jpeg')
+    pdimageshape = pdimage.shape
+    print(pdimageshape)
+    row = col = pdimageshape[0]
+    count = 0
     while response:
         dims = image.shape
         size = (dims[1], dims[0])
-        print(i)
-        i+=1
+        print(count)
+        count+=1
         # Edge detection process
         grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         blur_grayscale = cv2.GaussianBlur(grayscale, (3, 3), cv2.BORDER_DEFAULT)
@@ -44,63 +44,44 @@ def operation():
         # threshold and find the contours.
         # Contours can be explained simply as a curve joining
         # all the continuous points (along the boundary), having same color or intensity.
-        edge = cannyedge.canny_edge_detection(image).astype(np.uint8)
-        #edge1 = cv2.Canny(image, 60, 180)
 
 
-        '''
-        if old_frame is not None:
-            diff_frame = cv2.absdiff(edge1, old_frame)
-            if prev_edge == 0:
-                #cv2.imshow('edge',edge1)
-                #cv2.imshow('diff', diff_frame)
-                #cv2.waitKey(0)
-                cv2.imshow('thresh', thresh)
-                prev_edge = 1
-            diff_frame -= diff_frame.min()
-            diff_frame = np.uint8(255.0 * diff_frame / float(diff_frame.max()))
+        if method.lower() == "canny":
+            #Canny edge method
+            edge_detection = cannyedge.canny_edge_detection(image).astype(np.uint8)
+            #edge1 = cv2.Canny(image, 60, 180)
+        elif method.lower() == "binary":
+            #Threshold Method
+            ret, edge_detection = cv2.threshold(blur_grayscale, 165, 255, cv2.THRESH_BINARY)
+
+        contours, hierarchy = cv2.findContours(edge_detection, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
 
-        old_frame = None
-        '''
-
-        #ret, edge2 = cv2.threshold(edge, 165, 255, cv2.THRESH_BINARY)
-
-        ret, thresh = cv2.threshold(blur_grayscale, 165, 255, cv2.THRESH_BINARY)
-        #contours, hierarchy = cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-        #cv2.imshow('thresh', thresh)
-        #cv2.waitKey(0)
-        contours, hierarchy = cv2.findContours(edge, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
-        if flag == 0:
-            #im = image.copy()
-            #print(contours)
-            #cv2.imshow('im', im)
-            #cv2.drawContours(im, contours, -1, (0,255,0), 1)
-
-            #cv2.imshow('edge', im)
-            #cv2.waitKey(0)
-            flag = 1
-            #sys.exit()
 
         corners = corners_identification(hierarchy, contours)
 
         if len(corners) == 0:
             corners = old_positions
-        #print(corners)
+
 
         # Get the homography of the tag
         tag_img_resized = calculate_homography_wrap(corners, image)
 
 
-        new_corners, tag_val = ps.get_tag_positions(corners, tag_img_resized)
-        source = np.array([[0, 0], [row - 1, 0], [row - 1, col - 1], [0, col - 1]])
-        destination = np.concatenate(new_corners)
-        new_homography_matrix = H_matrix.homography(source, destination)
+        new_corners = ps.get_tag_positions(corners, tag_img_resized)
 
-        project_matrix = pm.projection_matrix(new_homography_matrix)
-        cube1, cube2 = exp.design_shape(shape, shape2, project_matrix)
-        image = exp.impose_cube(image, cube1, cube2)
+        if shape.lower() == "image":
+            inptcoords = np.array([[0, 0], [row - 1, 0], [row - 1, col - 1], [0, col - 1]])
+            outptcoords = np.concatenate(corners)
+            new_homography_matrix = H_matrix.homography(inptcoords, outptcoords)
+            image = pd.project_image(image, pdimage, new_corners, new_homography_matrix)
+        else:
+            inptcoords = np.array([[0, 0], [row - 1, 0], [row - 1, col - 1], [0, col - 1]])
+            outptcoords = np.concatenate(new_corners)
+            new_homography_matrix = H_matrix.homography(inptcoords, outptcoords)
+            project_matrix = pm.projection_matrix(new_homography_matrix)
+            structure = ds.design_shape(shape, project_matrix)
+            image = pd.project_cube(image, structure)
 
         old_positions = corners
         video_frames.append(image)
