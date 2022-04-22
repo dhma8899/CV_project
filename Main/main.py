@@ -79,9 +79,10 @@ def operation():
             inptcoords = np.array([[0, 0], [row - 1, 0], [row - 1, col - 1], [0, col - 1]])
             outptcoords = np.concatenate(new_corners)
             new_homography_matrix = H_matrix.homography(inptcoords, outptcoords)
+            image = pd.project_image(image, pdimage, new_corners, new_homography_matrix)
             project_matrix = pm.projection_matrix(new_homography_matrix)
             structure = ds.design_shape(shape, project_matrix)
-            image = pd.project_cube(image, structure)
+            image = pd.project_cube(image, structure, new_homography_matrix)
 
         old_positions = corners
         video_frames.append(image)
@@ -91,6 +92,16 @@ def operation():
 
 def corners_identification(hierarchy, contours):
     contours_points = []
+    contour_details = [
+        [cv2.contourArea(contour), cv2.approxPolyDP(contour, cv2.arcLength(contour, True) * 0.05, True), meta_data] for
+        meta_data, contour in zip(hierarchy[0], contours)]
+    for area, shape, meta_data in contour_details:
+        if len(shape) == 4 and area > 1500 and meta_data[0] == -1 and meta_data[1] == -1 and meta_data[3] != -1:
+            shape = shape.reshape(-1, 2)
+            contours_points.append(shape)
+
+    '''
+    contours_points = []
     for a, data in zip(hierarchy[0], contours):
         epsilon = cv2.arcLength(data, True) * 0.05
         data = cv2.approxPolyDP(data, epsilon, True)
@@ -98,7 +109,7 @@ def corners_identification(hierarchy, contours):
             data = data.reshape(-1, 2)
             if a[0] == -1 and a[1] == -1 and a[3] != -1:
                 contours_points.append(data)
-
+    '''
     return contours_points
 
 
