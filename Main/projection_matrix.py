@@ -4,17 +4,22 @@ import math
 
 
 def projection_matrix(homography):
-    x = np.array([[1406.08415449821, 0, 0],
-                  [2.20679787308599, 1417.99930662800, 0],
-                  [1014.13643417416, 566.347754321696, 1]]).T
-    temp = lg.inv(x) @ homography
-    col_data = [temp[:, 0], temp[:, 1], temp[:, 2]]
-    eq = 1 / math.sqrt(lg.norm(col_data[0], 2) * lg.norm(col_data[1], 2))
-    op = [col_data[0] * eq, col_data[1] * eq, col_data[2] * eq]
-    cross = np.cross(op[0]+op[1], np.cross(op[0], op[1]))
-    output = [
-        np.dot((op[0] + op[1]) / lg.norm(op[0] + op[1], 2) + cross / lg.norm(op[0] + op[1], 2), 1 / math.sqrt(2)),
-        np.dot((op[0] + op[1]) / lg.norm(op[0] + op[1], 2) - cross / lg.norm(op[0] + op[1], 2), 1 / math.sqrt(2))]
+    x = np.array([[1406.084154, 0, 0],
+                  [2.206797, 1417.999306, 0],
+                  [1014.136434, 566.347754, 1]]).T
+    temp = lg.inv(x) @ lg.inv(homography)
 
-    ret = np.array((output[0], output[1], np.cross(output[0], output[1]), op[2])).T
-    return np.dot(x, ret)
+    b1 = temp[:, 0].reshape(3, 1)
+    b2 = temp[:, 1].reshape(3, 1)
+    b3 = temp[:, 2].reshape(3, 1)
+
+    scalar_value = 2 / (np.linalg.norm(np.dot(lg.inv(x), b1)) +
+                        np.linalg.norm(np.dot(lg.inv(x), b2)))
+    # Calculating the transverse matrix
+    trans_matrix = scalar_value * b3
+    # Calculating the rotational matrix
+    rot_mat1 = scalar_value * b1
+    rot_mat2 = scalar_value * b2
+    rot_mat3 = ((np.cross(temp[:, 0], temp[:, 1])) * scalar_value * scalar_value).reshape(3, 1)
+    rot_matrix = np.concatenate((rot_mat1, rot_mat2, rot_mat3), axis=1)
+    return rot_matrix, trans_matrix, x

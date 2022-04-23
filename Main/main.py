@@ -65,7 +65,7 @@ def operation():
 
 
         # Get the homography of the tag
-        tag_img_resized = calculate_homography_wrap(corners, image)
+        tag_img_resized, homography_matrix = calculate_homography_wrap(corners, image)
 
 
         new_corners = ps.get_tag_positions(corners, tag_img_resized)
@@ -80,9 +80,9 @@ def operation():
             outptcoords = np.concatenate(new_corners)
             new_homography_matrix = H_matrix.homography(inptcoords, outptcoords)
             image = pd.project_image(image, pdimage, new_corners, new_homography_matrix)
-            project_matrix = pm.projection_matrix(new_homography_matrix)
-            structure = ds.design_shape(shape, project_matrix)
-            image = pd.project_cube(image, structure, new_homography_matrix)
+            rotation, translation, pmatrix = pm.projection_matrix(homography_matrix)
+            structure = ds.design_shape(shape, rotation, translation, pmatrix)
+            image = pd.project_cube(image, structure)
 
         old_positions = corners
         video_frames.append(image)
@@ -92,24 +92,12 @@ def operation():
 
 def corners_identification(hierarchy, contours):
     contours_points = []
-    contour_details = [
-        [cv2.contourArea(contour), cv2.approxPolyDP(contour, cv2.arcLength(contour, True) * 0.05, True), meta_data] for
-        meta_data, contour in zip(hierarchy[0], contours)]
+    contour_details = [[cv2.contourArea(contour), cv2.approxPolyDP(contour, cv2.arcLength(contour, True) * 0.05, True), meta_data] for meta_data, contour in zip(hierarchy[0], contours)]
     for area, shape, meta_data in contour_details:
         if len(shape) == 4 and area > 1500 and meta_data[0] == -1 and meta_data[1] == -1 and meta_data[3] != -1:
             shape = shape.reshape(-1, 2)
             contours_points.append(shape)
 
-    '''
-    contours_points = []
-    for a, data in zip(hierarchy[0], contours):
-        epsilon = cv2.arcLength(data, True) * 0.05
-        data = cv2.approxPolyDP(data, epsilon, True)
-        if cv2.contourArea(data) > 1000 and cv2.isContourConvex(data) and len(data) == 4:
-            data = data.reshape(-1, 2)
-            if a[0] == -1 and a[1] == -1 and a[3] != -1:
-                contours_points.append(data)
-    '''
     return contours_points
 
 
@@ -119,7 +107,7 @@ def calculate_homography_wrap(corners, image):
     warp1 = cv2.warpPerspective(image.copy(), homography_matrix, (100, 100))
     warp1_blur = cv2.GaussianBlur(warp1, (3, 3), cv2.BORDER_DEFAULT)
     tag_img_resized = cv2.resize(warp1_blur, dsize=None, fx=0.08, fy=0.08)
-    return tag_img_resized
+    return tag_img_resized, homography_matrix
 
 if __name__ == "__main__":
     frames, size = operation()
